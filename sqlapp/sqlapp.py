@@ -2,6 +2,8 @@ from django.db import models, connection
 from django.forms import ModelForm, Textarea
 from django.shortcuts import render
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpResponse
+import csv
 
 
 class SQL(models.Model):
@@ -9,6 +11,8 @@ class SQL(models.Model):
     query = models.TextField('Query')
     formatting = models.BooleanField(
         'Format', blank=True, default=False)
+    download_csv = models.BooleanField(
+        'Download CSV', blank=True, default=False)
 
     class Meta:
         managed = False
@@ -56,6 +60,15 @@ def execute_sql(request):
                     context['rows'] = cursor.fetchall()
                 else:
                     context['info'] = 'No result'
+        if form.cleaned_data['download_csv']:
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="sql.csv"'
+
+            writer = csv.writer(response)
+            writer.writerow(context['header'])
+            for row in context['rows']:
+                writer.writerow(row)
+            return response
 
     else:
         form = SQLForm()
