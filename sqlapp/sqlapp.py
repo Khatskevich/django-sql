@@ -3,6 +3,7 @@ from django.forms import ModelForm, Textarea
 from django.shortcuts import render
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse
+from django.apps import apps
 import csv
 
 
@@ -37,6 +38,7 @@ class SQLForm(ModelForm):
 def execute_sql(request):
 
     context = {}
+    context['table_names'] = get_table_names()
 
     if request.method == 'POST':
         request.POST = request.POST.copy()
@@ -118,3 +120,13 @@ def format_sql(query):
         new_query.append(word)
 
     return ''.join(new_query)
+
+
+def get_table_names():
+    tables = []
+    for app_name, app in apps.app_configs.items():
+        for model in app.get_models():
+            tables.append(model._meta.db_table)
+    tables = [name for name in tables if not name.startswith('django')]
+    tables.sort()
+    return tables
